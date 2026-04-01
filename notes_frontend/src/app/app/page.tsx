@@ -43,7 +43,7 @@ export default function AppPage() {
 
   const autosaveTimer = useRef<number | null>(null);
   const pendingPatch = useRef<
-    Partial<Pick<Note, "title" | "content" | "tags">> & { id?: string }
+    Partial<Pick<Note, "title" | "content" | "tag_ids">> & { id?: string }
   >({});
 
   const selectedNote = useMemo(
@@ -70,8 +70,8 @@ export default function AppPage() {
 
   async function refreshNotes() {
     const n = await apiListNotes({
-      query: query.trim() || undefined,
-      tag: activeTag || undefined,
+      q: query.trim() || undefined,
+      tag_id: activeTag || undefined,
       pinned: activePinned ? true : undefined,
     });
     setNotes(n);
@@ -113,7 +113,7 @@ export default function AppPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, activeTag, activePinned, state.status]);
 
-  function scheduleAutosave(id: string, patch: Partial<Pick<Note, "title" | "content" | "tags">>) {
+  function scheduleAutosave(id: string, patch: Partial<Pick<Note, "title" | "content" | "tag_ids">>) {
     pendingPatch.current = { ...pendingPatch.current, ...patch, id };
     setAutosaveStatus("saving");
 
@@ -127,7 +127,7 @@ export default function AppPage() {
         const updated = await apiUpdateNote(p.id, {
           title: p.title,
           content: p.content,
-          tags: p.tags,
+          tag_ids: p.tag_ids,
         });
         setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
         setAutosaveStatus("saved");
@@ -142,7 +142,7 @@ export default function AppPage() {
     const created = await apiCreateNote({
       title: "Untitled",
       content: "",
-      tags: activeTag ? [activeTag] : [],
+      tag_ids: activeTag ? [activeTag] : [],
       pinned: false,
     });
     setNotes((prev) => [created, ...prev]);
@@ -166,9 +166,9 @@ export default function AppPage() {
     await refreshTags();
   }
 
-  async function onDeleteTag(name: string) {
-    await apiDeleteTag(name);
-    if (activeTag === name) setActiveTag(null);
+  async function onDeleteTag(tagId: string) {
+    await apiDeleteTag(tagId);
+    if (activeTag === tagId) setActiveTag(null);
     await refreshTags();
     await refreshNotes();
   }
@@ -243,7 +243,7 @@ export default function AppPage() {
               setNotes((prev) =>
                 prev.map((n) =>
                   n.id === selectedNote.id
-                    ? { ...n, ...patch, tags: patch.tags ?? n.tags }
+                    ? { ...n, ...patch, tag_ids: patch.tag_ids ?? n.tag_ids }
                     : n
                 )
               );
